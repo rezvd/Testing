@@ -40,17 +40,6 @@ public class TriangleTest {
     }
 
     @Test
-    public void testWrongTriangle1() throws LengthException {
-        try {
-            Triangle triangle = new Triangle(wrong[0], wrong[1], wrong[2]);
-            fail();
-        }
-        catch(LengthException e){
-//            assersthat(e);
-        }
-    }
-
-    @Test
     public void testRectangularTriangle() throws LengthException {
         Triangle triangle = new Triangle(rectangular[0], rectangular[1], rectangular[2]);
         boolean test = triangle.isRectangular();
