@@ -2,17 +2,32 @@
  * Created by 1 on 10.04.2018.
  */
 
-import static com.jayway.restassured.RestAssured.given;
-import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.response.ValidatableResponse;
-import org.junit.Assert;
+import com.google.gson.Gson;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
+import org.junit.Before;
 import org.junit.Test;
 import org.json.JSONObject;
-import com.jayway.restassured.response.Response;
+import static io.restassured.RestAssured.preemptive;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
 
 public class TestAuth {
+    private static final String USERNAME = "admin";
+    private static final String PASSWORD = "admin123";
+    private static final String URL= "https://diploma-courses.7bits.it";
 
-    public static ValidatableResponse postJson(JSONObject request, String url, int status) {
+    @Before
+    public void setUp() {
+        RestAssured.baseURI = URL;
+        RestAssured.basePath = "/api";
+        RestAssured.authentication = preemptive().basic(USERNAME, PASSWORD);
+        RestAssured.useRelaxedHTTPSValidation();
+    }
+
+    public static ValidatableResponse postJson(String request, String url, int status) {
         return given()
                 .contentType(ContentType.JSON)
                 .body(request)
@@ -24,38 +39,32 @@ public class TestAuth {
 
     @Test
     public void testRight() {
-        JSONObject jo = new JSONObject();
-        jo.put("login", "admin");
-        jo.put("password", "admin");
-        Response resp = new postJson(jo, "https://diploma-courses.7bits.it/login", 200);
-        Assert.assertNotNull(resp.body());
+        LoginRequestData requestData= new LoginRequestData("admin", "admin");
+        ValidatableResponse resp =  postJson(new Gson().toJson(requestData), "/login", 200);
+        resp.body("token", is(notNullValue()));
     }
 
     @Test
     public void testEmptyLogin() {
-        JSONObject jo = new JSONObject();
-        jo.put("login", "");
-        jo.put("password", "admin");
-        Response resp = new postJson(jo, "https://diploma-courses.7bits.it/login", 200);
-        Assert.assertNull(resp.body());
+        LoginRequestData requestData= new LoginRequestData("", "admin");
+        ValidatableResponse resp =  postJson(new Gson().toJson(requestData), "/login", 403);
+        resp.body("Token", is(nullValue()));
     }
 
     @Test
     public void testEmptyPassword() {
+        LoginRequestData requestData= new LoginRequestData("admin", "");
         JSONObject jo = new JSONObject();
-        jo.put("login", "admin");
-        jo.put("password", "");
-        Response resp = new postJson(jo, "https://diploma-courses.7bits.it/login", 200);
-        Assert.assertNull(resp.body());
+        ValidatableResponse resp =  postJson(new Gson().toJson(requestData), "/login", 403);
+        resp.body("Token", is(nullValue()));
     }
 
     @Test
     public void testWrongPassword() {
-        JSONObject jo = new JSONObject();
-        jo.put("login", "admin");
-        jo.put("password", "a");
-        Response resp = new postJson(jo, "https://diploma-courses.7bits.it/login", 200);
-        Assert.assertNull(resp.body());
+        LoginRequestData requestData= new LoginRequestData("admin", "a");
+        ValidatableResponse resp =  postJson(new Gson().toJson(requestData), "/login", 403);
+        resp.body("Token", is(nullValue()));
     }
 
 }
+
